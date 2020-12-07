@@ -24,6 +24,11 @@ async def test_the_future():
         print("c")
         assert func_outcome == Value(7)
 
+async def test_join():
+    async with trio.open_nursery() as nursery:
+        future_list = [Future.run(my_fn, nursery) for _ in range(10)]
+        joined_future = Future.join(future_list, nursery)
+        assert await joined_future.outcome() == [Value(7)] * 10
 
 async def test_getting_biffed():
     async with trio.open_nursery() as nursery:
