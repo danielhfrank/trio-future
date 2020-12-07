@@ -28,6 +28,10 @@ class Future:
 
         return Future(recv_chan, nursery)
 
+    async def get(self):
+        future_outcome = await self.outcome()
+        return future_outcome.unwrap()
+
     async def outcome(self) -> outcome.Outcome:
         async with self.result_chan:
             return await self.result_chan.receive()
