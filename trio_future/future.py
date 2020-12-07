@@ -55,9 +55,14 @@ class Future:
                 async for i in child_recv_chan:
                     # Just consume all results from the channel until exhausted
                     pass
-            # And then signal to final channel that we are done
+            # And then wrap up the result and push it to the parent channel
+            errors = [e.error for e in result_list if isinstance(e, outcome.Error)]
+            if len(errors) > 0:
+                result = outcome.Error(trio.MultiError(errors))
+            else:
+                result = outcome.Value([o.unwrap() for o in result_list])
             async with parent_send_chan:
-                await parent_send_chan.send(result_list)
+                await parent_send_chan.send(result)
 
         # Start parent producer, which will in turn start all children
         # (doing this inside the nursery because it needs to act async)
