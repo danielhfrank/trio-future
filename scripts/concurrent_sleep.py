@@ -10,13 +10,14 @@ async def echo(a: str) -> str:
 
 
 async def main():
+    # Sequential blocking calls
     start = time.time()
     hello = await echo("hello")
     world = await echo("world")
     elapsed = time.time() - start
     print(f"{hello} {world} executed in {elapsed}")
     async with trio.open_nursery() as nursery:
-        # Naive implementation
+        # Naive use of futures, still allows for concurrent execution
         start = time.time()
         fut_1 = Future.run(lambda: echo("hello"), nursery)
         fut_2 = Future.run(lambda: echo("world"), nursery)
@@ -25,16 +26,14 @@ async def main():
         elapsed = time.time() - start
         print(f"{hello} {world} executed in {elapsed}")
 
-        # join implementation
+        # Using future.join
         start = time.time()
         fut_1 = Future.run(lambda: echo("hello"), nursery)
         fut_2 = Future.run(lambda: echo("world"), nursery)
         join_future = Future.join([fut_1, fut_2], nursery)
         outcome = await join_future.outcome()
-        # TODO - need to re-wrap in an outcome as well.
-        (hello, world) = outcome
         elapsed = time.time() - start
-        print(f"{hello} {world} executed in {elapsed}")
+        print(f"{outcome} executed in {elapsed}")
 
 
 if __name__ == "__main__":
