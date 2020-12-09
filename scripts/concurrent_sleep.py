@@ -35,6 +35,13 @@ async def main():
         elapsed = time.time() - start
         print(f"{outcome} executed in {elapsed}")
 
+        # Ok now let's try doing something bad
+        fut = Future.run(lambda: echo('uh oh'), nursery)
+        print('leaving')
+    print('left')
+    await fut.outcome()
+    await fut.outcome()
+
 
 if __name__ == "__main__":
     trio.run(main)

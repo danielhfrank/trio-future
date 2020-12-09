@@ -17,7 +17,9 @@ class Future:
 
     @staticmethod
     def run(async_fn, nursery: trio.Nursery) -> Future:
-        send_chan, recv_chan = trio.open_memory_channel(0)
+        # Set buffer size to 1 so that producer can send a single result
+        # witout blocking on a receiver.
+        send_chan, recv_chan = trio.open_memory_channel(1)
 
         async def producer():
             return_val = await outcome.acapture(async_fn)
