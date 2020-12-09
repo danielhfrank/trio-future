@@ -23,8 +23,12 @@ class Future:
 
         async def producer():
             return_val = await outcome.acapture(async_fn)
-            async with send_chan:
-                await send_chan.send(return_val)
+            # Shield sending the result from parent cancellation. This allows the Future to store
+            # the outcome of the operation, namely that it was cancelled.
+            # Note that the channel is buffered and only sent from here, so it should not block.
+            with trio.CancelScope(shield=True):
+                async with send_chan:
+                    await send_chan.send(return_val)
 
         nursery.start_soon(producer)
 

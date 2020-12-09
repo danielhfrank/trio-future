@@ -47,3 +47,40 @@ async def test_join_with_errors():
         assert isinstance(outcome, Error)
         with pytest.raises(RuntimeError):
             outcome.unwrap()
+
+
+async def test_timeouts_inside_nursery():
+    # In this test, we try to run a Future that we know will time out.
+    # We demonstrate that code that tries to `await` the Future's result will never complete
+    with trio.move_on_after(0.25):
+        async with trio.open_nursery() as nursery:
+            fut = Future.run(my_fn, nursery)
+            await fut.outcome()
+            assert False, "Should not get here"
+
+
+async def test_timeouts_outside_nursery():
+    # In this test, we try to run a Future that we know will time out.
+    # We demonstrate that code that execution does not leave the nursery until the future completes;
+    # Since the future times out, we never reach the code that is outside the nursery but inside the
+    # cancel scope
+    with trio.move_on_after(0.25):
+        async with trio.open_nursery() as nursery:
+            Future.run(my_fn, nursery)
+        assert False, "Should not get here"
+
+
+async def test_timeouts_outside_cancel_scope():
+    # In this test, we try to run a Future that we know will time out.
+    # Here, we show that it is possible to await the result of the Future if done outside of both
+    # the cancel scope and the nursery. In this case, its result will be Error(Cancelled)
+    with trio.move_on_after(0.25):
+        async with trio.open_nursery() as nursery:
+            fut = Future.run(my_fn, nursery)
+        # Remember, we will jump right out from the nursery scope, since move_on_after will cancel.
+        # Note however that `fut` is defined, since Future.run is synchronous
+        assert False, "Should not get here"
+    x = await fut.outcome()
+    assert isinstance(x, Error)
+    with pytest.raises(trio.Cancelled):
+        x.unwrap()
