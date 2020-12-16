@@ -39,8 +39,13 @@ class Future:
         return future_outcome.unwrap()
 
     async def outcome(self) -> outcome.Outcome:
-        async with self.result_chan:
-            return await self.result_chan.receive()
+        try:
+            async with self.result_chan:
+                return await self.result_chan.receive()
+        except trio.ClosedResourceError:
+            raise RuntimeError(
+                "Trio resource closed (did you try to call outcome twice on this future?"
+            )
 
     @staticmethod
     def join(nursery: trio.Nursery, futures: List[Future]) -> Future:

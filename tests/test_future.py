@@ -96,3 +96,11 @@ async def test_fn_args():
         fut = Future.run(nursery, echo, 2)
         result = await fut.get()
         assert result == 2
+
+
+async def test_outcome_twice():
+    async with trio.open_nursery() as nursery:
+        fut = Future.run(nursery, echo, 2)
+        await fut.outcome()
+        with pytest.raises(RuntimeError):
+            await fut.outcome()
