@@ -12,8 +12,8 @@ async def fib(n: int) -> int:
     else:
         async with trio.open_nursery() as nursery:
             results = await Future.join(
-                [Future.run(lambda: fib(n - 1), nursery), Future.run(lambda: fib(n - 2), nursery)],
                 nursery,
+                [Future.run(nursery, fib, n-1), Future.run(nursery, fib, n-2)],
             ).get()
             return sum(results)
 

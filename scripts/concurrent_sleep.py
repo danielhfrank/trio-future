@@ -19,8 +19,8 @@ async def main():
     async with trio.open_nursery() as nursery:
         # Naive use of futures, still allows for concurrent execution
         start = time.time()
-        fut_1 = Future.run(lambda: echo("hello"), nursery)
-        fut_2 = Future.run(lambda: echo("world"), nursery)
+        fut_1 = Future.run(nursery, echo, "hello")
+        fut_2 = Future.run(nursery, echo, "world")
         hello = await fut_1.outcome()
         world = await fut_2.outcome()
         elapsed = time.time() - start
@@ -28,19 +28,22 @@ async def main():
 
         # Using future.join
         start = time.time()
-        fut_1 = Future.run(lambda: echo("hello"), nursery)
-        fut_2 = Future.run(lambda: echo("world"), nursery)
-        join_future = Future.join([fut_1, fut_2], nursery)
+        fut_1 = Future.run(nursery, echo, "hello")
+        fut_2 = Future.run(nursery, echo, "world")
+        join_future = Future.join(nursery, [fut_1, fut_2])
         outcome = await join_future.outcome()
         elapsed = time.time() - start
         print(f"{outcome} executed in {elapsed}")
 
         # Ok now let's try doing something bad
-        fut = Future.run(lambda: echo('uh oh'), nursery)
+        fut = Future.run(nursery, echo, 'uh oh')
         print('leaving')
     print('left')
     await fut.outcome()
-    await fut.outcome()
+    try:
+        await fut.outcome()
+    except Exception:
+        print('gotcha')
 
 
 if __name__ == "__main__":

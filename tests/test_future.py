@@ -17,14 +17,14 @@ async def throws_error():
 
 async def test_the_future():
     async with trio.open_nursery() as nursery:
-        fut = Future.run(my_fn, nursery)
+        fut = Future.run(nursery, my_fn)
         func_outcome = await fut.outcome()
         assert func_outcome == Value(7)
 
 
 async def test_throws_error():
     async with trio.open_nursery() as nursery:
-        fut = Future.run(throws_error, nursery)
+        fut = Future.run(nursery, throws_error)
         # note that if we had awaited the function, this would just raise an exception
         func_outcome = await fut.outcome()
         assert isinstance(func_outcome, Error)
@@ -34,15 +34,15 @@ async def test_throws_error():
 
 async def test_join():
     async with trio.open_nursery() as nursery:
-        future_list = [Future.run(my_fn, nursery) for _ in range(10)]
-        joined_future = Future.join(future_list, nursery)
+        future_list = [Future.run(nursery, my_fn) for _ in range(10)]
+        joined_future = Future.join(nursery, future_list)
         assert await joined_future.outcome() == Value([7] * 10)
 
 
 async def test_join_with_errors():
     async with trio.open_nursery() as nursery:
-        future_list = [Future.run(my_fn, nursery), Future.run(throws_error, nursery)]
-        joined_future = Future.join(future_list, nursery)
+        future_list = [Future.run(nursery, my_fn), Future.run(nursery, throws_error)]
+        joined_future = Future.join(nursery, future_list)
         outcome = await joined_future.outcome()
         assert isinstance(outcome, Error)
         with pytest.raises(RuntimeError):
@@ -54,7 +54,7 @@ async def test_timeouts_inside_nursery():
     # We demonstrate that code that tries to `await` the Future's result will never complete
     with trio.move_on_after(0.25):
         async with trio.open_nursery() as nursery:
-            fut = Future.run(my_fn, nursery)
+            fut = Future.run(nursery, my_fn)
             await fut.outcome()
             assert False, "Should not get here"
 
@@ -66,7 +66,7 @@ async def test_timeouts_outside_nursery():
     # cancel scope
     with trio.move_on_after(0.25):
         async with trio.open_nursery() as nursery:
-            Future.run(my_fn, nursery)
+            Future.run(nursery, my_fn)
         assert False, "Should not get here"
 
 
@@ -76,7 +76,7 @@ async def test_timeouts_outside_cancel_scope():
     # the cancel scope and the nursery. In this case, its result will be Error(Cancelled)
     with trio.move_on_after(0.25):
         async with trio.open_nursery() as nursery:
-            fut = Future.run(my_fn, nursery)
+            fut = Future.run(nursery, my_fn)
         # Remember, we will jump right out from the nursery scope, since move_on_after will cancel.
         # Note however that `fut` is defined, since Future.run is synchronous
         assert False, "Should not get here"
@@ -84,3 +84,15 @@ async def test_timeouts_outside_cancel_scope():
     assert isinstance(x, Error)
     with pytest.raises(trio.Cancelled):
         x.unwrap()
+
+
+async def echo(n: int) -> int:
+    await trio.sleep(1)
+    return n
+
+
+async def test_fn_args():
+    async with trio.open_nursery() as nursery:
+        fut = Future.run(nursery, echo, 2)
+        result = await fut.get()
+        assert result == 2

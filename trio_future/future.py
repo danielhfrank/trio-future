@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List
+from typing import List, Callable, Awaitable, Any
 
 from dataclasses import dataclass
 
@@ -16,13 +16,13 @@ class Future:
     nursery: trio.Nursery  # TODO not sure if we need this but feels like good practice
 
     @staticmethod
-    def run(async_fn, nursery: trio.Nursery) -> Future:
+    def run(nursery: trio.Nursery, async_fn: Callable[..., Awaitable[Any]], *args) -> Future:
         # Set buffer size to 1 so that producer can send a single result
         # witout blocking on a receiver.
         send_chan, recv_chan = trio.open_memory_channel(1)
 
-        async def producer():
-            return_val = await outcome.acapture(async_fn)
+        async def producer(*args):
+            return_val = await outcome.acapture(async_fn, *args)
             # Shield sending the result from parent cancellation. This allows the Future to store
             # the outcome of the operation, namely that it was cancelled.
             # Note that the channel is buffered and only sent from here, so it should not block.
@@ -30,7 +30,7 @@ class Future:
                 async with send_chan:
                     await send_chan.send(return_val)
 
-        nursery.start_soon(producer)
+        nursery.start_soon(producer, *args)
 
         return Future(recv_chan, nursery)
 
@@ -43,7 +43,7 @@ class Future:
             return await self.result_chan.receive()
 
     @staticmethod
-    def join(futures: List[Future], nursery: trio.Nursery) -> Future:
+    def join(nursery: trio.Nursery, futures: List[Future]) -> Future:
         result_list = [None] * len(futures)
         parent_send_chan, parent_recv_chan = trio.open_memory_channel(0)
         child_send_chan, child_recv_chan = trio.open_memory_channel(0)
