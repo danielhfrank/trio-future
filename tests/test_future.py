@@ -3,7 +3,7 @@ import pytest
 import trio
 
 # from trio_future.future import Future
-from trio_future import run, join
+from trio_future import run, gather
 
 
 async def my_fn():
@@ -33,17 +33,17 @@ async def test_throws_error():
             func_outcome.unwrap()
 
 
-async def test_join():
+async def test_gather():
     async with trio.open_nursery() as nursery:
         future_list = [run(nursery, my_fn) for _ in range(10)]
-        joined_future = join(nursery, future_list)
+        joined_future = gather(nursery, future_list)
         assert await joined_future.outcome() == Value([7] * 10)
 
 
-async def test_join_with_errors():
+async def test_gather_with_errors():
     async with trio.open_nursery() as nursery:
         future_list = [run(nursery, my_fn), run(nursery, throws_error)]
-        joined_future = join(nursery, future_list)
+        joined_future = gather(nursery, future_list)
         outcome = await joined_future.outcome()
         assert isinstance(outcome, Error)
         with pytest.raises(RuntimeError):

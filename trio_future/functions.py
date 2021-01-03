@@ -25,7 +25,7 @@ def run(nursery: trio.Nursery, async_fn: Callable[..., Awaitable[Any]], *args) -
     return Future(recv_chan, nursery)
 
 
-def join(nursery: trio.Nursery, futures: List[Future]) -> Future:
+def gather(nursery: trio.Nursery, futures: List[Future]) -> Future:
     result_list = [None] * len(futures)
     parent_send_chan, parent_recv_chan = trio.open_memory_channel(0)
     child_send_chan, child_recv_chan = trio.open_memory_channel(0)

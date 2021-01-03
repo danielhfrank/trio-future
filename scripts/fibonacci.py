@@ -1,7 +1,7 @@
 import sys
 
 import trio
-from trio_future.future import Future
+from trio_future import gather, run
 
 
 async def fib(n: int) -> int:
@@ -11,9 +11,9 @@ async def fib(n: int) -> int:
         return 1
     else:
         async with trio.open_nursery() as nursery:
-            results = await Future.join(
+            results = await gather(
                 nursery,
-                [Future.run(nursery, fib, n-1), Future.run(nursery, fib, n-2)],
+                [run(nursery, fib, n-1), run(nursery, fib, n-2)],
             ).get()
             return sum(results)
 
