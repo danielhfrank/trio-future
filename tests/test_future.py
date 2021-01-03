@@ -50,6 +50,7 @@ async def test_join_with_errors():
             outcome.unwrap()
 
 
+@pytest.mark.xfail(reason="Nondeterministic failure", raises=trio.BrokenResourceError)
 async def test_timeouts_inside_nursery():
     # In this test, we try to run a Future that we know will time out.
     # We demonstrate that code that tries to `await` the Future's result will never complete
