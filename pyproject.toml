@@ -24,9 +24,14 @@ exclude = '''
 
 [tool.poetry]
 name = "trio-future"
-version = "0.1.0"
-description = ""
+version = "0.1.1"
+description = "Capture the return values of concurrently executed trio functions"
 authors = ["Dan Frank"]
+license = "MIT"
+readme = "readme.md"
+homepage = "https://github.com/danielhfrank/trio-future"
+repository = "https://github.com/danielhfrank/trio-future"
+
 
 [tool.poetry.dependencies]
 python = "^3.7"

@@ -2,7 +2,7 @@
 
 ## Overview
 
-`trio-future` allows you to execute execute trio asynchronous functions concurrently, while retaining references to their return values. It's an altnerative to using trio channels to communicate results between tasks that feels more like programming with normal functions.
+`trio-future` allows you to capture the return values of concurrently executed trio functions. It's an altnerative to using trio channels to communicate results between tasks that feels more like programming with normal functions.
 
 Consider an example with this simple echo function:
 ```python
