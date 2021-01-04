@@ -7,6 +7,20 @@ from .future import Future
 
 
 def run(nursery: trio.Nursery, async_fn: Callable[..., Awaitable[Any]], *args) -> Future:
+    """Run an async function and capture its result in a Future. This is the main entrypoint for trio-future.
+
+    Note that this is a synchronous function; it will immediately a :class:`Future` object. This object
+    can be used to access the return value of ``async_fn``. However, the function will *not* have begun execution.
+    Under the hood, we will pass the function to ``nursery.start_soon``; its execution will begin when we
+    next defer to the scheduler.
+
+    :param nursery: Nursery in which to run the function
+    :type nursery: trio.Nursery
+    :param async_fn: A trio-flavored async function to run. Positional arguments may be passed as trailing args, keyword arguments must use ``functools.partial`` or similar.
+    :type async_fn: Callable[..., Awaitable[Any]]
+    :return: A Future object allowing access to the return value of ``async_fn``.
+    :rtype: Future
+    """
     # Set buffer size to 1 so that producer can send a single result
     # witout blocking on a receiver.
     send_chan, recv_chan = trio.open_memory_channel(1)
@@ -26,6 +40,22 @@ def run(nursery: trio.Nursery, async_fn: Callable[..., Awaitable[Any]], *args) -
 
 
 def gather(nursery: trio.Nursery, futures: List[Future]) -> Future:
+    """Concurrently run multiple Futures.
+
+    This function will allow the provided Futures to run concurrently, and gather their results
+    into a single :class:`Future` containing the results of all the inputs.
+    That is, if each input Future contained an ``int``, then the returned Future will contain a ``List[int]``. In practice,
+    the types need not be homogenous. The list enclosed in the returned Future will have the same ordering as the input list.
+
+    If any Futures throw an exception, then the output Future will contain those exceptions, wrapped in a ``trio.MultiError``.
+
+    :param nursery: Nursery that manages the concurrent execution of the provided futures
+    :type nursery: trio.Nursery
+    :param futures: Futures to run
+    :type futures: List[Future]
+    :return: A Future containing the results of all the provided futures.
+    :rtype: Future
+    """
     result_list = [None] * len(futures)
     parent_send_chan, parent_recv_chan = trio.open_memory_channel(0)
     child_send_chan, child_recv_chan = trio.open_memory_channel(0)
