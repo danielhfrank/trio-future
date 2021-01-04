@@ -10,6 +10,7 @@ Welcome to trio-future's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   overview.md
    api.rst
 
 
