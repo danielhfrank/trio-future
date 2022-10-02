@@ -1,6 +1,7 @@
 from outcome import Value, Error
 import pytest
 import trio
+from exceptiongroup import BaseExceptionGroup
 
 # from trio_future.future import Future
 from trio_future import run, gather
@@ -46,7 +47,7 @@ async def test_gather_with_errors():
         joined_future = gather(nursery, future_list)
         outcome = await joined_future.outcome()
         assert isinstance(outcome, Error)
-        with pytest.raises(RuntimeError):
+        with pytest.raises(BaseExceptionGroup):
             outcome.unwrap()
 
 
