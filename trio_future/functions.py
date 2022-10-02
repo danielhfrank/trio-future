@@ -2,11 +2,14 @@ from typing import List, Callable, Awaitable, Any
 
 import outcome
 import trio
+from exceptiongroup import BaseExceptionGroup
 
 from .future import Future
 
 
-def run(nursery: trio.Nursery, async_fn: Callable[..., Awaitable[Any]], *args) -> Future:
+def run(
+    nursery: trio.Nursery, async_fn: Callable[..., Awaitable[Any]], *args
+) -> Future:
     """Run an async function and capture its result in a Future. This is the main entrypoint for trio-future.
 
     Note that this is a synchronous function; it will immediately a :class:`Future` object. This object
@@ -47,7 +50,7 @@ def gather(nursery: trio.Nursery, futures: List[Future]) -> Future:
     That is, if each input Future contained an ``int``, then the returned Future will contain a ``List[int]``. In practice,
     the types need not be homogenous. The list enclosed in the returned Future will have the same ordering as the input list.
 
-    If any Futures throw an exception, then the output Future will contain those exceptions, wrapped in a ``trio.MultiError``.
+    If any Futures throw an exception, then the output Future will contain those exceptions, wrapped in a ``exceptiongroup.BaseExceptionGroup``.
 
     :param nursery: Nursery that manages the concurrent execution of the provided futures
     :type nursery: trio.Nursery
@@ -80,7 +83,7 @@ def gather(nursery: trio.Nursery, futures: List[Future]) -> Future:
         # And then wrap up the result and push it to the parent channel
         errors = [e.error for e in result_list if isinstance(e, outcome.Error)]
         if len(errors) > 0:
-            result = outcome.Error(trio.MultiError(errors))
+            result = outcome.Error(BaseExceptionGroup("Multiple errors", errors))
         else:
             result = outcome.Value([o.unwrap() for o in result_list])
         async with parent_send_chan:
